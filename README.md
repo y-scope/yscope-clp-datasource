@@ -28,26 +28,31 @@ npm run server
 
 ### Usage
 
-1. Open Grafana at http://localhost:3000.
+1. By default, Grafana listens to `0.0.0.0:3000`. Open `http://<GRAFANA_IP>:3000` in the browser.
 
 2. Connect the datasource to a CLP API server:
-   - Navigate to **Connections > Data sources > CLP**.
+   - Navigate to **Connections > Data sources > CLP** on the left side panel.
    - Enter the API server URL (e.g., `http://<CLP_API_SERVER_HOST>:<PORT>`).
    - Click **Save & test** to verify connectivity.
 
-3. Build a dashboard:
-   - Add a visualization and choose **CLP** as the datasource.
+3. Explore log data:
+   - Click **Explore** on the left side panel.
    - Configure your query in the query editor:
      - **Dataset**: the dataset to search (defaults to `default`).
      - **Query Text**: the search query string.
      - **Ignore Case**: whether to perform a case-insensitive search.
      - **Max Results**: the maximum number of results to return.
+   - Set the desired time range and click **Run query** in the top right.
+   - The results will be displayed.
+
+4. Build a dashboard:
+   - Add a visualization and choose **CLP** as the datasource.
+   - Configure your query in the query editor.
    - Set the desired time range and click **Refresh** to run the query.
-   - To view results in the Logs panel:
-     1. Select the **Logs** visualization in the top right.
-     2. Add an **Extract fields** transformation and choose **JSON** as the format.
-     3. Add a **Convert field type** transformation to convert your timestamp field to the
-        **Time** type.
+   - To view results in the Logs panel, select the **Logs** visualization in the top right.
+   - To enable Grafana log level detection:
+      1. Add an **Extract fields** transformation and choose **JSON** as the format.
+      2. Extract the JSON field path for the log level into a field named `severity`.
 
 ## Test the plugin in an existing Grafana deployment
 

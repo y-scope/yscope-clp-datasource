@@ -12,7 +12,7 @@ import {
 } from '@grafana/data';
 
 import { SearchQuery, ClpDataSourceOptions, DEFAULT_QUERY } from './types';
-import { Observable, forkJoin, lastValueFrom } from 'rxjs';
+import { Observable, forkJoin, zip, lastValueFrom } from 'rxjs';
 import { map, switchMap, reduce } from 'rxjs/operators';
 import { createParser, type EventSourceMessage, type ParseError } from 'eventsource-parser';
 
@@ -99,8 +99,26 @@ export class DataSource extends DataSourceApi<SearchQuery, ClpDataSourceOptions>
       );
   }
 
+  #fetchTimestampColumnNames(dataset: string): Observable<string[]> {
+    return getBackendSrv()
+      .fetch<string[]>({
+        url: `${this.baseUrl}/column_metadata/${dataset}/timestamp`,
+        method: 'GET',
+      })
+      .pipe(map((response) => response.data));
+  }
+
+  #extractField(message: unknown, columnName: string): unknown {
+    const fieldPath = columnName.split(/(?<!\\)\./).map((s) => s.replace(/\\\./g, '.'));
+    let current = message;
+    for (const segment of fieldPath) {
+      current = (current as Record<string, unknown>)[segment];
+    }
+    return current;
+  }
+
   query(options: DataQueryRequest<SearchQuery>): Observable<DataQueryResponse> {
-    const observables = options.targets.map((target) =>
+    const queryResultsObservables = options.targets.map((target) =>
       this.#submitQuery(target, options.range).pipe(
         switchMap((uri) => {
           const searchJobId = uri.split('/').pop()!;
@@ -126,25 +144,48 @@ export class DataSource extends DataSourceApi<SearchQuery, ClpDataSourceOptions>
               }
             };
           });
-        }),
-        map((dataBuffer) => ({ target, dataBuffer }))
+        })
       )
     );
 
-    return forkJoin(observables).pipe(
-      map((results) => ({
-        data: results.map(({ target, dataBuffer }) => {
+    const timestampColumnNamesObservables = options.targets.map((target) =>
+      this.#fetchTimestampColumnNames(target.dataset ?? 'default')
+    );
+
+    const dataframeObservables = options.targets.map((target, i) =>
+      zip(timestampColumnNamesObservables[i], queryResultsObservables[i]).pipe(
+        map(([timestampColumnNames, dataBuffer]) => {
+          const fields = [];
+
           const values = target.maxNumResults ? dataBuffer.slice(0, target.maxNumResults) : dataBuffer;
+          fields.push({ name: 'body', values, type: FieldType.string });
+
+          const [timestampColumnName] = timestampColumnNames;
+          if ('undefined' !== typeof timestampColumnName) {
+            const parsedValues = values.map((line) => JSON.parse(line));
+            const timestamps = parsedValues.map((parsedValue) => {
+              try {
+                return this.#extractField(parsedValue, timestampColumnName);
+              } catch (err: unknown) {
+                return null;
+              }
+            });
+            fields.push({ name: 'timestamp', values: timestamps, type: FieldType.time });
+          }
+
           return createDataFrame({
             refId: target.refId,
-            fields: [{ name: target.refId, values, type: FieldType.string }],
+            fields: fields,
             meta: {
               type: DataFrameType.LogLines,
+              preferredVisualisationType: 'logs',
             },
           });
-        }),
-      }))
+        })
+      )
     );
+
+    return forkJoin(dataframeObservables).pipe(map((data) => ({ data })));
   }
 
   async testDatasource() {
