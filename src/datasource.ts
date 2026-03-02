@@ -178,7 +178,7 @@ export class DataSource extends DataSourceApi<SearchQuery, ClpDataSourceOptions>
             fields: fields,
             meta: {
               type: DataFrameType.LogLines,
-              preferredVisualisationType: "logs",
+              preferredVisualisationType: 'logs',
             },
           });
         })
