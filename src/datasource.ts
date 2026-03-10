@@ -109,7 +109,7 @@ export class DataSource extends DataSourceApi<SearchQuery, ClpDataSourceOptions>
   }
 
   #extractField(message: unknown, columnName: string): unknown {
-    const fieldPath = columnName.replace(/\\\./g, '.').split('.');
+const fieldPath = columnName.split(/(?<!\\)\./).map(s => s.replace(/\\\./g, '.'));
     let current = message;
     for (const segment of fieldPath) {
       current = (current as Record<string, unknown>)[segment];
