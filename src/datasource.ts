@@ -170,7 +170,7 @@ export class DataSource extends DataSourceApi<SearchQuery, ClpDataSourceOptions>
                 return null;
               }
             });
-            fields.push({ name: `timestamp`, values: timestamps, type: FieldType.time });
+            fields.push({ name: "timestamp", values: timestamps, type: FieldType.time });
           }
 
           return createDataFrame({
