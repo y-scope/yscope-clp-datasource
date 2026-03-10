@@ -160,7 +160,7 @@ export class DataSource extends DataSourceApi<SearchQuery, ClpDataSourceOptions>
           const values = target.maxNumResults ? dataBuffer.slice(0, target.maxNumResults) : dataBuffer;
           fields.push({ name: 'body', values, type: FieldType.string });
 
-          const [timestampColumnName, ..._] = timestampColumnNames;
+          const [timestampColumnName] = timestampColumnNames;
           if ('undefined' !== typeof timestampColumnName) {
             const parsedValues = values.map((line) => JSON.parse(line));
             const timestamps = parsedValues.map((parsedValue) => {
