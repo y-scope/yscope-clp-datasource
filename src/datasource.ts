@@ -109,7 +109,7 @@ export class DataSource extends DataSourceApi<SearchQuery, ClpDataSourceOptions>
   }
 
   #extractField(message: unknown, columnName: string): unknown {
-const fieldPath = columnName.split(/(?<!\\)\./).map(s => s.replace(/\\\./g, '.'));
+    const fieldPath = columnName.split(/(?<!\\)\./).map((s) => s.replace(/\\\./g, '.'));
     let current = message;
     for (const segment of fieldPath) {
       current = (current as Record<string, unknown>)[segment];
@@ -170,7 +170,7 @@ const fieldPath = columnName.split(/(?<!\\)\./).map(s => s.replace(/\\\./g, '.')
                 return null;
               }
             });
-            fields.push({ name: "timestamp", values: timestamps, type: FieldType.time });
+            fields.push({ name: 'timestamp', values: timestamps, type: FieldType.time });
           }
 
           return createDataFrame({
